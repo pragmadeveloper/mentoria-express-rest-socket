@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cliente Socket.IO (Notificaciones de Libros)</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #messages { border: 1px solid #ccc; padding: 10px; min-height: 200px; overflow-y: auto; }
+        .message { margin-bottom: 5px; padding: 5px; background-color: #f0f0f0; border-radius: 3px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .danger { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Notificaciones de Libros (Cliente Socket.IO)</h1>
+    <div id="messages">
+        <p class="info">Esperando notificaciones del servidor...</p>
+    </div>
+
+    <script>
+        // Conéctate al servidor Socket.IO (que está en el mismo puerto que tu Express API)
+        const socket = io('http://localhost:3000'); // Asegúrate de que la URL y puerto coincidan
+
+        const messagesDiv = document.getElementById('messages');
+
+        // Función para añadir mensajes al div de mensajes
+        function addMessage(type, content) {
+            const msgElement = document.createElement('div');
+            msgElement.className = `message ${type}`;
+            msgElement.textContent = `[${new Date().toLocaleTimeString()}] ${content}`;
+            messagesDiv.appendChild(msgElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll automático al final
+        }
+
+        // Evento de conexión
+        socket.on('connect', () => {
+            addMessage('info', 'Conectado al servidor de notificaciones.');
+            console.log('Conectado a Socket.IO');
+        });
+
+        // Evento de desconexión
+        socket.on('disconnect', () => {
+            addMessage('danger', 'Desconectado del servidor de notificaciones.');
+            console.log('Desconectado de Socket.IO');
+        });
+
+        // Escuchar el evento 'book:created'
+        socket.on('book:created', (book) => {
+            addMessage('success', `Nuevo libro creado: "${book.title}" por ${book.author} (ID: ${book.id})`);
+            console.log('Libro creado:', book);
+        });
+
+        // Escuchar el evento 'book:updated'
+        socket.on('book:updated', (book) => {
+            addMessage('info', `Libro actualizado: "${book.title}" (ID: ${book.id})`);
+            console.log('Libro actualizado:', book);
+        });
+
+        // Escuchar el evento 'book:deleted'
+        socket.on('book:deleted', (data) => {
+            addMessage('danger', `Libro eliminado: ID ${data.id}`);
+            console.log('Libro eliminado:', data);
+        });
+
+        // Escuchar cualquier otro evento de depuración o error
+        socket.on('error', (error) => {
+            addMessage('danger', `Error de Socket.IO: ${error.message}`);
+            console.error('Error de Socket.IO:', error);
+        });
+    </script>
+</body>
+</html>

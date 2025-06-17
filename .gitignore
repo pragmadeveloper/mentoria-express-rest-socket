@@ -1,0 +1,16 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env # Si usas variables de entorno en un archivo .env
+
+# Archivos de sistema/OS
+.DS_Store # macOS
+Thumbs.db # Windows
+
+# Archivos de IDE
+.vscode/ # Si usas VS Code y quieres ignorar la configuración local
+*.sublime-project
+*.sublime-workspace
+.idea/ # IntelliJ IDEA
