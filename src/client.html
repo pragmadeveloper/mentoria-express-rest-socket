@@ -70,6 +70,24 @@
             addMessage('danger', `Error de Socket.IO: ${error.message}`);
             console.error('Error de Socket.IO:', error);
         });
+
+        // Escuchar el evento 'user:created'
+        socket.on('User:created', (user) => {
+            addMessage('success', `Nuevo usuario creado: "${user.name}", ${user.email} (ID: ${user.id})`);
+            console.log('Usuario creado:', user);
+        });
+
+        // Escuchar el evento 'book:updated'
+        socket.on('user:updated', (user) => {
+            addMessage('info', `Usuario actualizado: "${user.name}" (ID: ${user.id})`);
+            console.log('Usuario actualizado:', user);
+        });
+
+        // Escuchar el evento 'book:deleted'
+        socket.on('User:deleted', (user) => {
+            addMessage('danger', `Usuario eliminado: ID ${user.id}`);
+            console.log('Libro eliminado:', user);
+        });
     </script>
 </body>
 </html>
