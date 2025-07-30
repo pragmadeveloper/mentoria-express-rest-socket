@@ -2,10 +2,10 @@ const { Router } = require('express');
 const { getUsers, createUser, deleteUserById, getUserById, updateUserById } = require('../controllers/users.controller');
 const router = Router()
 
-//Routes for books
+//Routes for users
+router.post('/', createUser);
 router.get('/', getUsers);
 router.get('/:id', getUserById);
-router.post('/', createUser);
 router.put('/:id', updateUserById);
 router.delete('/:id', deleteUserById);
 

@@ -1,85 +1,87 @@
-const users = require('../models/users.model');
-const newUsers = users.users;
+const User = require('../models/users.model');
 const socketIO = require('../services/socket.service');
 
-//create user
+//Create user
 const createUser= async (req, res) => {
-  const { name, email, address, role  } = req.body;
-  if ( !name || !email || !address || !role) {
-      return res.status(400).json({ message: 'Todos los campos son requeridos: name, email, address, role' });
-  }
-  const newUser = {id: String(newUsers.length + 1),name, email, address, role};
-  if(newUser){
-      newUsers.push(newUser);
+  try{
+    const newUser = await User.create(req.body);
+    if(newUser){
       socketIO.emitEvent('User:created', newUser);
-      return res.status(201).json(newUsers); // 201 Created
-  }else{
-    return res.status(500).json({ message: 'Error al crear usuario' });
+      return res.status(201).json({message:'User created successfully', data:newUser} );
+    }else{
+      return res.status(400).json({ message: 'Error al crear usuario', data: null  });
+    }
+  }catch (error) {
+    return res.status(500).json({ message: 'Error al crear usuario', error: error.message, data: null });
   }
 }
 
 //get all Users
 const getUsers = async (req, res) => {
-  if (!newUsers || newUsers.length === 0) {
-      return res.status(404).json({ message: 'No se encontraron usuarios' });
-  }else {
-      return res.status(200).json(newUsers);
+  try {
+    const users = await User.findAll();
+    if (users.length > 0) {
+      return res.status(200).json({ message: 'Users retrieved successfully', data: users });
+    } else {
+      return res.status(404).json({ message: 'No users found', data: [] });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: 'Error retrieving users', error: error.message, data: null });
   }
 }
 
 //get user by id
 const getUserById = async (req, res) => {
   const { id } = req.params;
-  const user = newUsers.find(b => b.id === id);
-  if (user) {
-      return res.status(200).json(user);
-  } else {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+  try {
+    const user = await User.findByPk(id);
+    if (user) {
+      return res.status(200).json({ message: 'User retrieved successfully', data: user });
+    } else {
+      return res.status(404).json({ message: 'User not found', data: null });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: 'Error retrieving user', error: error.message, data: null });
   }
+
 }
 
 //update user by id
 const updateUserById = async(req, res) => {
   const { id } = req.params;
-  const { name,email,address,role } = req.body;
-
-  let userFound = false;
-  newUsers.forEach(user => {
-    if (user.id === id) {
-      userFound = true;
-      user.name = name || user.name;
-      user.email = email || user.email;
-      user.address = address || user.address;
-      user.role = role || user.role;
+  try {
+    const [updated] = await User.update(req.body, { where: { id } });
+    if (updated) {
+      const updatedUser = await User.findByPk(id);
+      socketIO.emitEvent('User:updated', updatedUser);
+      return res.status(200).json({ message: 'User updated successfully', data: updatedUser });
+    } else {
+      return res.status(404).json({ message: 'User not found', data: null });
     }
-  });
-
-  if (userFound) {
-    const updatedUser = newUsers.find(b => b.id === id);
-    socketIO.emitEvent('user:updated', updatedUser);
-    return res.status(200).json(updatedUser);
-  } else {
-    return res.status(404).json({ message: 'Usuario no encontrado' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error updating user', error: error.message, data: null });
   }
 }
 
 //delete user by id
 const deleteUserById= async (req, res) => {
   const { id } = req.params;
-  const initialLength = newUsers.length;
-  const deleteUsers = newUsers.filter(user => user.id !== id);
-
-  if (deleteUsers.length < initialLength) {
-    socketIO.emitEvent('User:deleted', { id });
-    return res.status(200).json(deleteUsers);
-  } else {
-    return res.status(404).json({ message: 'Usuario no encontrado' });
+  try {
+    const deleted = await User.destroy({ where: { id } });
+    if (deleted) {
+      socketIO.emitEvent('User:deleted', { id });
+      return res.status(200).json({ message: 'User deleted successfully', data: null });
+    } else {
+      return res.status(404).json({ message: 'User not found', data: null });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: 'Error deleting user', error: error.message, data: null });
   }
 }
 module.exports = {
+    createUser,
     getUsers,
     getUserById,
-    createUser,
     updateUserById,
     deleteUserById
 };

@@ -1,89 +1,90 @@
-const books = require('../models/books.model');
-const newBooks = books.books; // Simulamos una llamada a la base de datos
-const socketIO = require('../services/socket.service'); // Importa el servicio de Socket.IO
+const Book = require('../models/books.model');
+const socketIO = require('../services/socket.service');
 
-//Crear un nuevo libro
+//Create book
 const createBook= async (req, res) => {
-    const { title, author, year } = req.body;
-    if (!title || !author || !year) {
-        return res.status(400).json({ message: 'Todos los campos son requeridos: title, author, year' });
+    try {
+        const newBook = await Book.create(req.body);
+        if (newBook) {
+        socketIO.emitEvent('Book:created', newBook);
+        return res.status(201).json({ message: 'Book created successfully', data: newBook });
+        } else {
+        return res.status(400).json({ message: 'Error creating book', data: null });
+        }
+    } catch (error) {
+        return res.status(500).json({ message: 'Error creating book', error: error.message, data: null });
     }
-    const newBook = {id: String(newBooks.length + 1),title,author,year};
-    if(newBook){
-       newBooks.push(newBook);
-          // ¡Aquí emitimos la notificación!
-       socketIO.emitEvent('book:created', newBook);
-       return res.status(201).json(newBooks); // 201 Created
-    }else{
-      return res.status(500).json({ message: 'Error al crear el libro' });
-    }
+
+
 }
 
-//Obtener todos los libros
+//get all books
 const getBooks = async (req, res) => {
-
-    if (!newBooks || newBooks.length === 0) {
-        return res.status(404).json({ message: 'No se encontraron libros' });
-    }
-    else {
-        return res.status(200).json(newBooks);
+    try {
+        const books = await Book.findAll();
+        if (books.length > 0) {
+            return res.status(200).json({ message: 'Books retrieved successfully', data: books });
+        } else {
+            return res.status(404).json({ message: 'No books found', data: [] });
+        }
+    } catch (error) {
+        return res.status(500).json({ message: 'Error retrieving books', error: error.message, data: null });
     }
 }
 
-//Obtener un libro por ID
+//get user by id
 const getBookById = async (req, res) => {
     const { id } = req.params;
-     const book = newBooks.find(b => b.id === id);
- 
-   if (book) {
-       return res.status(200).json(book);
-    } else {
-       return res.status(404).json({ message: 'Libro no encontrado' });
+    try {
+        const book = await Book.findByPk(id);
+        if (book) {
+            return res.status(200).json({ message: 'Book retrieved successfully', data: book });
+        } else {
+            return res.status(404).json({ message: 'Book not found', data: null });
+        }
+    } catch (error) {
+        return res.status(500).json({ message: 'Error retrieving book', error: error.message, data: null });
     }
 }
 
-//Actualizar un libro existente por ID
+//update book by id
 const updateBookById = async(req, res) => {
     const { id } = req.params;
-    const { title, author, year } = req.body;
-
-    let bookFound = false;
-    newBooks.forEach(book => {
-        if (book.id === id) {
-            bookFound = true;
-            book.title = title || book.title;
-            book.author = author || book.author;
-            book.year = year || book.year;
+    try {
+        const [updated] = await Book.update(req.body, { where: { id } });
+        if (updated) {
+            const updatedBook = await Book.findByPk(id);
+            socketIO.emitEvent('Book:updated', updatedBook);
+            return res.status(200).json({ message: 'Book updated successfully', data: updatedBook });
+        } else {
+            return res.status(404).json({ message: 'Book not found', data: null });
         }
-    });
-
-    if (bookFound) {
-        const updatedBook = newBooks.find(b => b.id === id);
-         socketIO.emitEvent('book:updated', updatedBook);
-       return res.status(200).json(updatedBook);
-    } else {
-       return res.status(404).json({ message: 'Libro no encontrado' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Error updating book', error: error.message, data: null });
     }
+    
+
 }
 
-//Eliminar un libro por ID
+//delete book by id
 const deleteBookById= async (req, res) => {
     const { id } = req.params;
-    const initialLength = newBooks.length;
-    const deleteBooks = newBooks.filter(book => book.id !== id);
-
-    if (deleteBooks.length < initialLength) {
-        socketIO.emitEvent('book:deleted', { id });
-       return res.status(200).json(deleteBooks); // 204 No Content (éxito sin contenido de respuesta)
-    } else {
-       return res.status(404).json({ message: 'Libro no encontrado' });
+    try {
+        const deleted = await Book.destroy({ where: { id } });
+        if (deleted) {
+            socketIO.emitEvent('Book:deleted', { id });
+            return res.status(200).json({ message: 'Book deleted successfully', data: null });
+        } else {
+            return res.status(404).json({ message: 'Book not found', data: null });
+        }
+    } catch (error) {
+        return res.status(500).json({ message: 'Error deleting book', error: error.message, data: null });
     }
-
 }
 module.exports = {
-    getBooks,
-    getBookById,
-    createBook,
-    updateBookById,
-    deleteBookById
+createBook,
+getBooks,
+getBookById,
+updateBookById,
+deleteBookById
 };
