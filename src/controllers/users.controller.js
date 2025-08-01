@@ -1,20 +1,6 @@
 const User = require('../models/users.model');
 const socketIO = require('../services/socket.service');
 
-//Create user
-const createUser= async (req, res) => {
-  try{
-    const newUser = await User.create(req.body);
-    if(newUser){
-      socketIO.emitEvent('User:created', newUser);
-      return res.status(201).json({message:'User created successfully', data:newUser} );
-    }else{
-      return res.status(400).json({ message: 'Error al crear usuario', data: null  });
-    }
-  }catch (error) {
-    return res.status(500).json({ message: 'Error al crear usuario', error: error.message, data: null });
-  }
-}
 
 //get all Users
 const getUsers = async (req, res) => {
@@ -79,7 +65,6 @@ const deleteUserById= async (req, res) => {
   }
 }
 module.exports = {
-    createUser,
     getUsers,
     getUserById,
     updateUserById,
