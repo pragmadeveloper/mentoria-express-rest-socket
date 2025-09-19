@@ -1,6 +1,43 @@
 const User = require('../models/users.model');
 const socketIO = require('../services/socket.service');
+const bcrypt = require('bcrypt');
 
+//Create user
+const createUser = async (req, res) => {
+  try {
+    let body = req.body
+    const hashedPassword = await bcrypt.hash(body.password, 10);
+    const newUser = await User.create({...req.body, password:hashedPassword});
+    if (newUser) {
+      socketIO.emitEvent('User:created', newUser);
+      return res.status(201).json({ message: 'user created successfully', data: newUser });
+    } else {
+      return res.status(400).json({ message: 'Error creating user', data: null });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: 'Error creating user', error: error.message, data: null });
+  }
+}
+
+//login user
+const loginUser = async (req, res) => {
+  try {
+    let {email, password} = req.body
+    const user = await User.findOne({
+      where: { email: email }
+    });
+    if(!user){
+      return res.status(400).json({ message: 'El email no está en base de datos', data: null });
+    }
+    const matchPassword = await bcrypt.compare(password, user.password);
+    if(!matchPassword){
+       return res.status(400).json({ message: 'Contraseña incorrecta', data: null });
+    }
+    return res.status(200).json({ message: 'usuario logueago', data: null });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error login user', error: error.message, data: null });
+  }
+}
 
 //get all Users
 const getUsers = async (req, res) => {
@@ -68,5 +105,7 @@ module.exports = {
     getUsers,
     getUserById,
     updateUserById,
-    deleteUserById
+    deleteUserById,
+    createUser,
+    loginUser
 };

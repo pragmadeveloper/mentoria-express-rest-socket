@@ -1,5 +1,8 @@
 const Book = require('../models/books.model');
 const socketIO = require('../services/socket.service');
+const NodeCache =  require("node-cache")
+
+const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
 
 //Create book
 const createBook= async (req, res) => {
@@ -21,8 +24,19 @@ const createBook= async (req, res) => {
 //get all books
 const getBooks = async (req, res) => {
     try {
+        const cacheKey = "books";
+
+        const cachedBooks = cache.get(cacheKey);
+        if (cachedBooks) {
+            console.log("books cached");
+            return res.status(200).json({
+                message: "Books retrieved successfully (from cache)",
+                data: cachedBooks,
+            });
+        }
         const books = await Book.findAll();
         if (books.length > 0) {
+            cache.set(cacheKey, books);
             return res.status(200).json({ message: 'Books retrieved successfully', data: books });
         } else {
             return res.status(404).json({ message: 'No books found', data: [] });

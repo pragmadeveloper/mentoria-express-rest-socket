@@ -23,7 +23,7 @@ const server = http.createServer(app); // Creamos un servidor HTTP a partir de n
 // Inicializamos Socket.IO con el servidor HTTP
 socketIO.init(server);
 
-server.listen(app.get("port"), () => {
+server.listen(app.get("port"), "0.0.0.0", () => {
     console.log(`Socket.IO escuchando en el puerto ${PORT}`);
     console.log("Servidor rest en el puerto : ", app.get("port"));
 });
